@@ -24,7 +24,7 @@ import time
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM5"                  # Windows(variacao de)
+serialName = "COM3"                  # Windows(variacao de)
 
 
 def main():
@@ -32,8 +32,7 @@ def main():
         #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         #para declarar esse objeto é o nome da porta.
         com1 = enlace(serialName)
-        
-    
+
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
         com1.enable()
         print("primeiro checkpoint, comunicação aberta")
@@ -56,6 +55,26 @@ def main():
         #tente entender como o método send funciona!
         #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
         
+        answer = 0
+        
+        while answer != 1:
+            vivo = 3
+            vivo = vivo.to_bytes(2, byteorder="big")
+            com1.sendData(vivo)
+            timestart = time.time()
+            answer, answerlen = com1.getData(1)
+            answer = int.from_bytes(answer, "big")
+            print("Resposta recebida")
+            timefinal = time.time()
+            print(timefinal-timestart)
+            if timefinal-timestart > 5:
+                tentar = input("Servidor inativo. Tentar novamente? S/N")
+                if tentar == "S":
+                    pass
+                elif tentar == "N":
+                    com1.disable()
+                    exit()  
+
         Comando1 = "00FF"
         Comando2 = "00"
         Comando3 = "0F"
@@ -82,7 +101,6 @@ def main():
                 listaComandos.append(Comando5)
             elif n == 6:
                 listaComandos.append(Comando6)
-
 
 
 

@@ -54,6 +54,18 @@ def main():
         #tente entender como o método send funciona!
         #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
         
+        rxvivo, nRxvivo = com2.getData(2)
+        rxvivo = int.from_bytes(rxvivo, byteorder = "big")
+        print(rxvivo)
+
+        if rxvivo == 3:
+            answer = 1
+            answer = answer.to_bytes(1, byteorder="big")
+            com2.sendData(answer)
+            print("Enviado com sucesso")
+
+
+        
         imgWrite = "comandos.txt"
 
         
