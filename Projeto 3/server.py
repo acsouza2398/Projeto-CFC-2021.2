@@ -53,28 +53,52 @@ def main():
         #faça um print para avisar que a transmissão vai começar.
         #tente entender como o método send funciona!
         #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
-        
-        rxvivo, nRxvivo = com2.getData(2)
-        rxvivo = int.from_bytes(rxvivo, byteorder = "big")
-        print(rxvivo)
 
-        if rxvivo == 3:
-            answer = 1
-            answer = answer.to_bytes(1, byteorder="big")
+        head = 'Mandando!!'
+        EOP = "Fim!"
+
+        head = bytes(head, encoding = 'utf-8')
+        EOP = bytes(EOP, encoding = 'utf-8')
+        
+        rxmensagem, nRxmensagem = com2.getData(14)
+        print(rxmensagem)
+        print("Handshake recebido!")
+
+        if rxmensagem == b'Mandando!!Fim!':
+            answer = head+EOP
             com2.sendData(answer)
+
             print("Enviado com sucesso")
 
-
+        recebido = 0
         
+        rxPacote1, rxPacote1size = com2.getData(128)
+        print("recebeu {}" .format(rxPacote1size))
+
+        rxPacote1 = rxPacote1.decode("utf-8")
+        pacote = rxPacote1[9]
+
+        if pacote == recebido+1:
+            print("Pacote {} recebido".format(pacote))
+            recebido+=1
+
+        rxPacote2, rxPacote2size = com2.getData(100)
+        print("recebeu {}" .format(rxPacote2size))
+
+        rxPacote2 = rxPacote2.decode("utf-8")
+        pacote = rxPacote2[9]
+
+        if pacote == recebido+1:
+            print("Pacote {} recebido".format(pacote))
+            recebido+=1
+
+
+
         imgWrite = "comandos.txt"
 
-        
-        rxBuffersize, nRx = com2.getData(2)
-        print("recebeu {}" .format(rxBuffersize))
-        novo_size = int.from_bytes(rxBuffersize,"big")
-        print(novo_size)
-        rxBuffer, nRx = com2.getData(novo_size)
-        print("recebeu {}" .format(rxBuffer))
+        with open(imgWrite, "wb") as imagem:
+            imagem.write(rxBuffer)
+            imagem.close()
 
         com2.sendData(rxBuffersize)
         print("Devolveu o tamanho!!!")

@@ -54,17 +54,26 @@ def main():
         #faça um print para avisar que a transmissão vai começar.
         #tente entender como o método send funciona!
         #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
+
+        head = 'Mandando!!'
+        EOP = "Fim!"
+
+        head = bytes(head, encoding = 'utf-8')
+        EOP = bytes(EOP, encoding = 'utf-8')
         
-        answer = 0
+        answer = ""
         
-        while answer != 1:
-            vivo = 3
-            vivo = vivo.to_bytes(2, byteorder="big")
-            com1.sendData(vivo)
+        while answer == "":
+            mensagem = head+EOP
+            print(mensagem)
+
+            print("Enviando a mensagem")
+            com1.sendData(mensagem)
             timestart = time.time()
-            answer, answerlen = com1.getData(1)
-            answer = int.from_bytes(answer, "big")
+
+            answer, answerlen = com1.getData(4)
             print("Resposta recebida")
+
             timefinal = time.time()
             print(timefinal-timestart)
             if timefinal-timestart > 5:
@@ -75,49 +84,60 @@ def main():
                     com1.disable()
                     exit()  
 
-        Comando1 = "00FF"
-        Comando2 = "00"
-        Comando3 = "0F"
-        Comando4 = "F0"
-        Comando5 = "FF00"
-        Comando6 = "FF"
+        Comando1 = "00"
+        Comando2 = "0F"
+        Comando3 = "F0"
+        Comando4 = "FF"
 
-        c = randint(10,30)
-        listaComandos = []
+        c = 200
+        Comandos1 = ""
+        Comandos2 = ""
         
         for i in range(c):
-            n = randint(1,6)
-            if n == 1:
-                listaComandos.append("2")
-                listaComandos.append(Comando1)
-            elif n == 2:
-                listaComandos.append(Comando2)
-            elif n == 3:
-                listaComandos.append(Comando3)
-            elif n == 4:
-                listaComandos.append(Comando4)
-            elif n == 5:
-                listaComandos.append("2")
-                listaComandos.append(Comando5)
-            elif n == 6:
-                listaComandos.append(Comando6)
+            n = randint(1,4)
+            if i <= 113:
+                if n == 1:
+                    Comandos1 = Comandos1 + Comando1
+                elif n == 2:
+                    Comandos1 = Comandos1 + Comando2
+                elif n == 3:
+                    Comandos1 = Comandos1 + Comando3
+                elif n == 4:
+                    Comandos1 = Comandos1 + Comando4
+            else:
+                if n == 1:
+                    Comandos2 = Comandos2 + Comando1
+                elif n == 2:
+                    Comandos2 = Comandos2 + Comando2
+                elif n == 3:
+                    Comandos2 = Comandos2 + Comando3
+                elif n == 4:
+                    Comandos2 = Comandos2 + Comando4
 
 
+        txBuffer1 = Comandos1
+        txBuffer2 = Comandos2 #dados
 
-        txBuffer = listaComandos #dados
-        print(txBuffer)
-        txbufferlen = len(txBuffer)
-        txBufferhexa = txbufferlen.to_bytes(2, byteorder="big")
-        print("txBufferhexa",txBufferhexa)
-        com1.sendData(txBufferhexa)
+        #print(txBuffer)
+        #txBufferhexa = txbufferlen.to_bytes(2, byteorder="big")
+        #print("txBufferhexa",txBufferhexa)
+
+        head1 = "2,pacote 1"
+        head2 = "2,pacote 2"
+
+        datagrama1 = head1+txBuffer1+EOP
+        datagrama2 = head2+txBuffer2+EOP
+
+        datagrama1 = bytes(datagrama1, encoding = "utf-8")
+        datagrama2 = bytes(datagrama2, encoding = "utf-8")
+
+        print("Enviando primeira parte do payload")
+        com1.sendData(datagrama1)
         time.sleep(1)
 
-
-        txBuffer = np.asarray(txBuffer)
-        print(txBuffer)
-
-        
-        com1.sendData(txBuffer)
+        print("Enviando segunda parte do payload")
+        com1.sendData(datagrama2)
+        time.sleep(1)
     
         print ("transmissão sucedida!!!")
     
@@ -129,7 +149,7 @@ def main():
         rxBufferClient, nRxClient = com1.getData(2)
         resposta = int.from_bytes(rxBufferClient, "big")
 
-        if resposta == txbufferlen:
+        if resposta == 200:
             print("Deu Certo! Não perdeu informação!")
         else:
             print("Deu ruim!!!")
