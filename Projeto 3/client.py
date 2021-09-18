@@ -59,7 +59,8 @@ def main():
         head = b'Mandando!!'
         EOP = b'\x00\x00\x00\x00'
         
-        answer = ""
+        answer = b""
+        i=0
 
         #Handshake
         
@@ -67,27 +68,26 @@ def main():
         print("Handshake")
         print("-------------------------")
 
-        while answer == "":
+        while answer == b"":
             mensagem = head+EOP
 
             print("Enviando o handshake")
             com1.sendData(mensagem)
 
-            print("Handshake enviado")
 
             answer, answerlen = com1.getData(14)
-            print("Handshake recebido")
-            
-            time.sleep(5)
 
-            if answer == "":
-                tentar = input("Servidor inativo. Tentar novamente? S/N")
+            if answer == b"":
+                tentar = input("Servidor inativo. Tentar novamente? S/N ")
                 if tentar == "S":
+                    i+=1
                     pass
                 elif tentar == "N":
                     com1.disable()
                     exit()  
-
+            else:
+                print("Resposta recebida")
+            
 
         #Montando o Datagrama
 

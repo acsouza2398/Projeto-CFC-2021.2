@@ -59,19 +59,25 @@ def main():
 
         head = bytes(head, encoding = 'utf-8')
 
+        rxmensagem = b""
+
         print("-------------------------")
         print("Iniciando o handshake")
         print("-------------------------")
         
-        rxmensagem, nRxmensagem = com2.getData(14)
-        print(rxmensagem)
-        print("Handshake recebido!")
+        while rxmensagem == b"":
+            rxmensagem, nRxmensagem = com2.getData(14)
+            print(rxmensagem)
+            
+            print("Handshake recebido!")
 
-        if rxmensagem == b'Mandando!!\x00\x00\x00\x00':
-            answer = head+EOP
-            com2.sendData(answer)
+            if rxmensagem == b'Mandando!!\x00\x00\x00\x00':
+                answer = head+EOP
+                com2.sendData(answer)
 
-            print("Handshake enviado")
+                print("Handshake enviado")
+            else:
+                pass
 
         pacote_recebido = 1
         terminou = False
@@ -112,19 +118,25 @@ def main():
 
             if pacote == pacote_recebido:
                 print("Pacote {} recebido".format(pacote))
-            
+            else:
+                print("Erro, pacote recebido diferente do esperado. Aguardando novo envio")
+                redlight = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+b'nao'+EOP
+                com2.sendData(redlight)
+                continue
+
             print("Enviando confirmação")
 
             if rxPacote[-4:] == EOP:
                 greenlight = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+b'sim'+EOP
                 com2.sendData(greenlight)
-                print("Tudo certo")
+                print("Tudo certo, pacote enviado completo")
                 print("-------------------------")
             else:
                 redlight = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+b'nao'+EOP
                 com2.sendData(redlight)
-                print("Deu erro")
-            
+                print("Deu erro, pacote enviado incompleto. Aguardando novo envio")
+                continue
+
             if pacote_recebido == pacote_final:
                 terminou = True
             else:
