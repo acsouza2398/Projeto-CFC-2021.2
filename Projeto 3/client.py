@@ -15,6 +15,7 @@ import time
 from random import randint
 import numpy as np
 import time
+import math
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -55,23 +56,21 @@ def main():
         #tente entender como o método send funciona!
         #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
 
-        head = 'Mandando!!'
-        EOP = "Fim!"
-
-        head = bytes(head, encoding = 'utf-8')
-        EOP = bytes(EOP, encoding = 'utf-8')
+        head = b'Mandando!!'
+        EOP = b'\x00\x00\x00\x00'
         
         answer = ""
+
+        #Handshake
         
         while answer == "":
             mensagem = head+EOP
-            print(mensagem)
 
             print("Enviando a mensagem")
             com1.sendData(mensagem)
             timestart = time.time()
 
-            answer, answerlen = com1.getData(4)
+            answer, answerlen = com1.getData(14)
             print("Resposta recebida")
 
             timefinal = time.time()
@@ -84,75 +83,79 @@ def main():
                     com1.disable()
                     exit()  
 
-        Comando1 = "00"
-        Comando2 = "0F"
-        Comando3 = "F0"
-        Comando4 = "FF"
 
-        c = 200
-        Comandos1 = ""
-        Comandos2 = ""
+        #Montando o Datagrama
+
+        filepath = "./payload.txt"
+        sizePayload = 114 
+
+        print("Montando os pacotes")
+
+        QntPackages = []
+        with open(filepath, "rb") as file:
+            payload_bin = bytearray(file.read())
+            pacote_size = (len(payload_bin)/sizePayload)
+            for i in range(math.ceil(pacote_size)):
+                QntPackages.append(payload_bin[:sizePayload])
+                del payload_bin[:sizePayload]
+
+
+        print("Montando o datagrama")
+
+        datagramas = []
+        for i in range(len(QntPackages)):
+            pacote_size = len(QntPackages).to_bytes(1, byteorder="big")
+            pacote_num = (i+1).to_bytes(1, byteorder="big")
+            Head = pacote_num + b'/' + pacote_size + b'\x00\x00\x00\x00\x00\x00\x00'
+            datagrama_string = Head+QntPackages[i]+EOP
+            datagramas.append(datagrama_string)
         
-        for i in range(c):
-            n = randint(1,4)
-            if i <= 113:
-                if n == 1:
-                    Comandos1 = Comandos1 + Comando1
-                elif n == 2:
-                    Comandos1 = Comandos1 + Comando2
-                elif n == 3:
-                    Comandos1 = Comandos1 + Comando3
-                elif n == 4:
-                    Comandos1 = Comandos1 + Comando4
-            else:
-                if n == 1:
-                    Comandos2 = Comandos2 + Comando1
-                elif n == 2:
-                    Comandos2 = Comandos2 + Comando2
-                elif n == 3:
-                    Comandos2 = Comandos2 + Comando3
-                elif n == 4:
-                    Comandos2 = Comandos2 + Comando4
+        print("Foram montados {} pacotes".format(len(QntPackages)))
+
+        print(len(datagramas))
+
+        print(datagramas)
+
+        #Enviando o Datagrama
+
+        print("Iniciando o envio dos datagramas")
+
+        i=0
+
+        while i < len(datagramas):
+            print(i)
+            pacote_atual = (len(datagramas[i])).to_bytes(2, byteorder="big")
+            print("Tamanho do pacote ", pacote_atual)
+            dg_pacote_atual = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+pacote_atual+EOP
+            print(dg_pacote_atual)
+
+            print("Enviando tamanho pacote {}".format(i+1))
+            time.sleep(1)
+            com1.sendData(np.asarray(dg_pacote_atual))
+
+            check_tamanho, check_tamanho_size = com1.getData(16)
+
+            if check_tamanho == dg_pacote_atual:
+                print("Tamanho recebido corretamente")
+                print("Enviando o pacote")
+                com1.sendData(np.asarray(datagramas[i]))
+
+            check_pacote, check_pacote_size = com1.getData(17)
+
+            if check_pacote[10:13] == b'sim':
+                print("Confirmação recebida")
+                i=i+1
 
 
-        txBuffer1 = Comandos1
-        txBuffer2 = Comandos2 #dados
-
-        #print(txBuffer)
-        #txBufferhexa = txbufferlen.to_bytes(2, byteorder="big")
-        #print("txBufferhexa",txBufferhexa)
-
-        head1 = "2,pacote 1"
-        head2 = "2,pacote 2"
-
-        datagrama1 = head1+txBuffer1+EOP
-        datagrama2 = head2+txBuffer2+EOP
-
-        datagrama1 = bytes(datagrama1, encoding = "utf-8")
-        datagrama2 = bytes(datagrama2, encoding = "utf-8")
-
-        print("Enviando primeira parte do payload")
-        com1.sendData(datagrama1)
-        time.sleep(1)
-
-        print("Enviando segunda parte do payload")
-        com1.sendData(datagrama2)
-        time.sleep(1)
-    
-        print ("transmissão sucedida!!!")
+        print ("transmissão finalizada!!!")
     
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # Tente entender como esse método funciona e o que ele retorna
         #txSize = com1.tx.getStatus()
         #print("txSize:",txSize)
 
-        rxBufferClient, nRxClient = com1.getData(2)
-        resposta = int.from_bytes(rxBufferClient, "big")
+        #Verificação
 
-        if resposta == 200:
-            print("Deu Certo! Não perdeu informação!")
-        else:
-            print("Deu ruim!!!")
 
         timefinal = time.time()
         print("-------------------------")

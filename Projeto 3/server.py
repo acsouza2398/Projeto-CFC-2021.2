@@ -55,53 +55,83 @@ def main():
         #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
 
         head = 'Mandando!!'
-        EOP = "Fim!"
+        EOP = b'\x00\x00\x00\x00'
 
         head = bytes(head, encoding = 'utf-8')
-        EOP = bytes(EOP, encoding = 'utf-8')
         
         rxmensagem, nRxmensagem = com2.getData(14)
         print(rxmensagem)
         print("Handshake recebido!")
 
-        if rxmensagem == b'Mandando!!Fim!':
+        if rxmensagem == b'Mandando!!\x00\x00\x00\x00':
             answer = head+EOP
             com2.sendData(answer)
 
             print("Enviado com sucesso")
 
-        recebido = 0
-        
-        rxPacote1, rxPacote1size = com2.getData(128)
-        print("recebeu {}" .format(rxPacote1size))
+        pacote_recebido = 1
+        terminou = False
+        rxBuffer = b""
 
-        rxPacote1 = rxPacote1.decode("utf-8")
-        pacote = rxPacote1[9]
+        print("Iniciando o recebimento do datagrama")
 
-        if pacote == recebido+1:
-            print("Pacote {} recebido".format(pacote))
-            recebido+=1
+        while not terminou:
+            rxTamPacoteAt,rxTamPacoteAtSize = com2.getData(16)
 
-        rxPacote2, rxPacote2size = com2.getData(100)
-        print("recebeu {}" .format(rxPacote2size))
+            print(rxTamPacoteAt)
+            
+            pacote_size = rxTamPacoteAt[10:12]
+            print(pacote_size)
+            pacote_size = int.from_bytes(pacote_size, "big")
 
-        rxPacote2 = rxPacote2.decode("utf-8")
-        pacote = rxPacote2[9]
+            print("Tamanho do pacote ", pacote_size)
 
-        if pacote == recebido+1:
-            print("Pacote {} recebido".format(pacote))
-            recebido+=1
+            print("Verificando Tamanho")
+
+            com2.sendData(rxTamPacoteAt)
+
+            print("Recebendo o pacote")
+
+            rxPacote, rxPacotesize = com2.getData(pacote_size)
+            print("recebeu {} bytes" .format(rxPacotesize))
+
+            pacote = rxPacote[0]
+            pacote_final = rxPacote[2]
+            print("Serao recebidos {} pacotes".format(pacote_final))
+            rxPacote_str = rxPacote.decode("utf-8")
+
+            print("Recebi pacote {}".format(pacote))
+
+            rxBuffer = rxBuffer + rxPacote[10:-5]   
+
+
+            if pacote == pacote_recebido:
+                print("Pacote {} recebido".format(pacote))
+            
+            print("Enviando confirmação")
+
+            if rxPacote[-4:] == EOP:
+                greenlight = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+b'sim'+EOP
+                com2.sendData(greenlight)
+                print("Tudo certo")
+            else:
+                redlight = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+b'nao'+EOP
+                com2.sendData(redlight)
+                print("Deu erro")
+            
+            if pacote_recebido == pacote_final:
+                terminou = True
+            else:
+                pacote_recebido+=1
 
 
 
-        imgWrite = "comandos.txt"
+
+        imgWrite = "Payload_Novo.txt"
 
         with open(imgWrite, "wb") as imagem:
             imagem.write(rxBuffer)
             imagem.close()
-
-        com2.sendData(rxBuffersize)
-        print("Devolveu o tamanho!!!")
             
             
     
