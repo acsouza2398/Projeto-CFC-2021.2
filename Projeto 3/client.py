@@ -63,19 +63,24 @@ def main():
 
         #Handshake
         
+        print("-------------------------")
+        print("Handshake")
+        print("-------------------------")
+
         while answer == "":
             mensagem = head+EOP
 
-            print("Enviando a mensagem")
+            print("Enviando o handshake")
             com1.sendData(mensagem)
-            timestart = time.time()
+
+            print("Handshake enviado")
 
             answer, answerlen = com1.getData(14)
-            print("Resposta recebida")
+            print("Handshake recebido")
+            
+            time.sleep(5)
 
-            timefinal = time.time()
-            print(timefinal-timestart)
-            if timefinal-timestart > 5:
+            if answer == "":
                 tentar = input("Servidor inativo. Tentar novamente? S/N")
                 if tentar == "S":
                     pass
@@ -88,6 +93,10 @@ def main():
 
         filepath = "./payload.txt"
         sizePayload = 114 
+        
+        print("-------------------------")
+        print("Montando o Datagrama")
+        print("-------------------------")
 
         print("Montando os pacotes")
 
@@ -112,24 +121,22 @@ def main():
         
         print("Foram montados {} pacotes".format(len(QntPackages)))
 
-        print(len(datagramas))
-
-        print(datagramas)
 
         #Enviando o Datagrama
-
-        print("Iniciando o envio dos datagramas")
+        print("-------------------------")
+        print("Iniciando o envio do datagrama")
+        print("-------------------------")
 
         i=0
 
         while i < len(datagramas):
-            print(i)
+            print("Começando o processo de envio do pacote {}".format(i+1))
             pacote_atual = (len(datagramas[i])).to_bytes(2, byteorder="big")
             print("Tamanho do pacote ", pacote_atual)
             dg_pacote_atual = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+pacote_atual+EOP
             print(dg_pacote_atual)
 
-            print("Enviando tamanho pacote {}".format(i+1))
+            print("Enviando tamanho do pacote {}".format(i+1))
             time.sleep(1)
             com1.sendData(np.asarray(dg_pacote_atual))
 
@@ -137,17 +144,18 @@ def main():
 
             if check_tamanho == dg_pacote_atual:
                 print("Tamanho recebido corretamente")
-                print("Enviando o pacote")
+                print("Enviando o pacote {}".format(i+1))
                 com1.sendData(np.asarray(datagramas[i]))
 
             check_pacote, check_pacote_size = com1.getData(17)
 
             if check_pacote[10:13] == b'sim':
                 print("Confirmação recebida")
+                print("-------------------------")
                 i=i+1
 
 
-        print ("transmissão finalizada!!!")
+        print ("Transmissão finalizada")
     
         # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
         # Tente entender como esse método funciona e o que ele retorna

@@ -58,6 +58,10 @@ def main():
         EOP = b'\x00\x00\x00\x00'
 
         head = bytes(head, encoding = 'utf-8')
+
+        print("-------------------------")
+        print("Iniciando o handshake")
+        print("-------------------------")
         
         rxmensagem, nRxmensagem = com2.getData(14)
         print(rxmensagem)
@@ -67,13 +71,15 @@ def main():
             answer = head+EOP
             com2.sendData(answer)
 
-            print("Enviado com sucesso")
+            print("Handshake enviado")
 
         pacote_recebido = 1
         terminou = False
         rxBuffer = b""
 
+        print("-------------------------")
         print("Iniciando o recebimento do datagrama")
+        print("-------------------------")
 
         while not terminou:
             rxTamPacoteAt,rxTamPacoteAtSize = com2.getData(16)
@@ -93,7 +99,6 @@ def main():
             print("Recebendo o pacote")
 
             rxPacote, rxPacotesize = com2.getData(pacote_size)
-            print("recebeu {} bytes" .format(rxPacotesize))
 
             pacote = rxPacote[0]
             pacote_final = rxPacote[2]
@@ -102,7 +107,7 @@ def main():
 
             print("Recebi pacote {}".format(pacote))
 
-            rxBuffer = rxBuffer + rxPacote[10:-5]   
+            rxBuffer = rxBuffer + rxPacote[10:-4]   
 
 
             if pacote == pacote_recebido:
@@ -114,6 +119,7 @@ def main():
                 greenlight = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+b'sim'+EOP
                 com2.sendData(greenlight)
                 print("Tudo certo")
+                print("-------------------------")
             else:
                 redlight = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+b'nao'+EOP
                 com2.sendData(redlight)
@@ -125,7 +131,14 @@ def main():
                 pacote_recebido+=1
 
 
+        print("-------------------------")
+        print("Transmissão encerrada")
+        print("-------------------------")
 
+
+        print("-------------------------")
+        print("Reagrupando o arquivo enviado")
+        print("-------------------------")
 
         imgWrite = "Payload_Novo.txt"
 
