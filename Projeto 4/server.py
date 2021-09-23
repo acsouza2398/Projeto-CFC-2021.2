@@ -54,16 +54,46 @@ def main():
         #tente entender como o método send funciona!
         #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
 
-        head = 'Mandando!!'
-        EOP = b'\x00\x00\x00\x00'
+        '''
+            h0 – tipo de mensagem
+            h1 – id do sensor
+            h2 – id do servidor
+            h3 – número total de pacotes do arquivo
+            h4 – número do pacote sendo enviado
+            h5 – se tipo for handshake:id do arquivo
+            h5 – se tipo for dados: tamanho do payload
+            h6 – pacote solicitado para recomeço quando a erro no envio.
+            h7 – último pacote recebido com sucesso.
+            h8 – h9 – CRC
+        '''
+        h0=b'0'
+        h1=b'A'
+        h2=b'B'
+        h3=b'0'
+        h4=b'0'
+        h5=b'0'
+        h6=b'0'
+        h7=b'0'
+        h8=b'CRC'
+        h9=b'CRC'
 
-        head = bytes(head, encoding = 'utf-8')
+
+        head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+        EOP = b'0xFF 0xAA 0xFF 0xAA'
+
+        
 
         rxmensagem = b""
 
         print("-------------------------")
         print("Iniciando o handshake")
         print("-------------------------")
+
+        h0=b'2'
+        h5=b'C'
+
+        head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+
         
         while rxmensagem == b"":
             rxmensagem, nRxmensagem = com2.getData(14)
@@ -71,7 +101,7 @@ def main():
             
             print("Handshake recebido!")
 
-            if rxmensagem == b'Mandando!!\x00\x00\x00\x00':
+            if rxmensagem != b'' :
                 answer = head+EOP
                 com2.sendData(answer)
 

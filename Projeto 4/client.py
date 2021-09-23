@@ -10,6 +10,7 @@
 #para acompanhar a execução e identificar erros, construa prints ao longo do código! 
 
 
+from sys import byteorder
 from enlace import *
 import time
 from random import randint
@@ -36,58 +37,72 @@ def main():
 
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
         com1.enable()
-        print("primeiro checkpoint, comunicação aberta")
-        timeinicial = time.time()
-        #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
-        
-        #aqui você deverá gerar os dados a serem transmitidos. 
-        #seus dados a serem transmitidos são uma lista de bytes a serem transmitidos. Gere esta lista com o 
-        #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
-        
-        #txBuffer = imagem em bytes!
-    
+        inicia = False
 
-    
-        #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
-       
-            
-        #finalmente vamos transmitir os tados. Para isso usamos a funçao sendData que é um método da camada enlace.
-        #faça um print para avisar que a transmissão vai começar.
-        #tente entender como o método send funciona!
-        #Cuidado! Apenas trasmitimos arrays de bytes! Nao listas!
+        '''
+            h0 – tipo de mensagem
+            h1 – id do sensor
+            h2 – id do servidor
+            h3 – número total de pacotes do arquivo
+            h4 – número do pacote sendo enviado
+            h5 – se tipo for handshake:id do arquivo
+            h5 – se tipo for dados: tamanho do payload
+            h6 – pacote solicitado para recomeço quando a erro no envio.
+            h7 – último pacote recebido com sucesso.
+            h8 – h9 – CRC
+        '''
 
-        head = b'Mandando!!'
-        EOP = b'\x00\x00\x00\x00'
-        
-        answer = b""
-        i=0
-
-        #Handshake
-        
-        print("-------------------------")
-        print("Handshake")
-        print("-------------------------")
-
-        while answer == b"":
-            mensagem = head+EOP
-
-            print("Enviando o handshake")
-            com1.sendData(mensagem)
+        h0=b'0'
+        h1=b'A'
+        h2=b'B'
+        h3=b'0'
+        h4=b'0'
+        h5=b'0'
+        h6=b'0'
+        h7=b'0'
+        h8=b'CRC'
+        h9=b'CRC'
 
 
-            answer, answerlen = com1.getData(14)
+        head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+        EOP = b'0xFF 0xAA 0xFF 0xAA'
 
-            if answer == b"":
-                tentar = input("Servidor inativo. Tentar novamente? S/N ")
-                if tentar == "S":
-                    i+=1
-                    pass
-                elif tentar == "N":
-                    com1.disable()
-                    exit()  
-            else:
-                print("Resposta recebida")
-            
+        while not inicia:
+
+            print("Quero Falar com você")
+            timeinicial = time.time()
+
+            answer = b""
+            i=0
+
+            #Handshake
+
+            print("-------------------------")
+            print("Handshake")
+            print("-------------------------")
+
+            while answer == b"":
+                h0=b'1'
+                h5=b'C'
+
+                head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+
+                mensagem = head+EOP
+
+                print("Enviando o handshake")
+                com1.sendData(mensagem)
+
+                time.sleep(5)
+
+                print("Na escuta")
+
+                answer, answerlen = com1.getData(14)
+
+                answer_d = answer.decode("utf-8")
+
+                if answer_d[2] == h2.decode("utf-8"):
+                    print("Resposta recebida")
+                    inicia = True
 
         #Montando o Datagrama
 
@@ -113,13 +128,12 @@ def main():
 
         datagramas = []
         for i in range(len(QntPackages)):
-            pacote_size = len(QntPackages).to_bytes(1, byteorder="big")
-            pacote_num = (i+1).to_bytes(1, byteorder="big")
-            Head = pacote_num + b'/' + pacote_size + b'\x00\x00\x00\x00\x00\x00\x00'
-            datagrama_string = Head+QntPackages[i]+EOP
+            datagrama_string = QntPackages[i]+EOP
             datagramas.append(datagrama_string)
         
         print("Foram montados {} pacotes".format(len(QntPackages)))
+
+        numPck = len(QntPackages)
 
 
         #Enviando o Datagrama
@@ -127,32 +141,29 @@ def main():
         print("Iniciando o envio do datagrama")
         print("-------------------------")
 
-        i=0
+        cont=1
 
-        while i < len(datagramas):
-            print("Começando o processo de envio do pacote {}".format(i+1))
-            pacote_atual = (len(datagramas[i])).to_bytes(2, byteorder="big")
+        while cont <= numPck:
+            h0=b'3'
+            h3=numPck.to_bytes(1, byteorder='big')
+            h4=cont.to_bytes(1, byteorder='big')
+            h5=(len(datagramas[cont-1])-4).to_bytes(2, byteorder="big")
+
+            head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+
+            print("Começando o processo de envio do pacote {}".format(cont))
+            pacote_atual = (len(datagramas[cont-1])).to_bytes(2, byteorder="big")
             print("Tamanho do pacote ", pacote_atual)
-            dg_pacote_atual = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+pacote_atual+EOP
-            print(dg_pacote_atual)
 
-            print("Enviando tamanho do pacote {}".format(i+1))
-            time.sleep(1)
-            com1.sendData(np.asarray(dg_pacote_atual))
-
-            check_tamanho, check_tamanho_size = com1.getData(16)
-
-            if check_tamanho == dg_pacote_atual:
-                print("Tamanho recebido corretamente")
-                print("Enviando o pacote {}".format(i+1))
-                com1.sendData(np.asarray(datagramas[i]))
+            print("Enviando o pacote {}".format(cont))
+            com1.sendData(np.asarray(head+datagramas[cont-1]))
 
             check_pacote, check_pacote_size = com1.getData(17)
 
             if check_pacote[10:13] == b'sim':
                 print("Confirmação recebida")
                 print("-------------------------")
-                i=i+1
+                cont+=1
 
 
         print ("Transmissão finalizada")
