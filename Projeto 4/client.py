@@ -92,11 +92,11 @@ def main():
                 print("Enviando o handshake")
                 com1.sendData(mensagem)
 
-                time.sleep(5)
+                #time.sleep(5)
 
                 print("Na escuta")
 
-                answer, answerlen = com1.getData(14)
+                answer, answerlen = com1.getData(33)
 
                 answer_d = answer.decode("utf-8")
 
@@ -147,24 +147,54 @@ def main():
             h0=b'3'
             h3=numPck.to_bytes(1, byteorder='big')
             h4=cont.to_bytes(1, byteorder='big')
-            h5=(len(datagramas[cont-1])-4).to_bytes(2, byteorder="big")
-
+            h5=(len(datagramas[cont-1])-19).to_bytes(2, byteorder="big")
+            
             head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
 
             print("Começando o processo de envio do pacote {}".format(cont))
             pacote_atual = (len(datagramas[cont-1])).to_bytes(2, byteorder="big")
-            print("Tamanho do pacote ", pacote_atual)
+
+            print("Enviando o tamanho do pacote")
+            com1.sendData(np.asarray(head+EOP))
+
+            time.sleep(2)
 
             print("Enviando o pacote {}".format(cont))
             com1.sendData(np.asarray(head+datagramas[cont-1]))
 
-            check_pacote, check_pacote_size = com1.getData(17)
+            t_inicial1 = time.time()
+            t_inicial2 = time.time()
 
-            if check_pacote[10:13] == b'sim':
+            print("Aguardando confirmação")
+            check_pacote, check_pacote_size = com1.getData(33)
+
+            check_pacote_str = check_pacote.decode("utf-8")
+
+            if check_pacote_str[0] == '4':
                 print("Confirmação recebida")
                 print("-------------------------")
                 cont+=1
+            else:
+                if time.time() - t_inicial1 > 5:
+                    print("Erro. Reinviando o pacote {}".format(cont))
+                    com1.sendData(np.asarray(head+datagramas[cont-1]))
+                    t_inicial1 = 0
 
+                if time.time() - t_inicial2 > 20:
+                    h0 = b'5'
+                    head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+                    com1.sendData(np.asarray(head+EOP))
+                    print("ops! :-\\")
+                    com1.disable()
+                    exit()
+                else:
+                    erro_6, erro_6_len = com1.getData(33)
+                    cont = int.from_bytes(erro_6[5:6], "big")
+                    h0=b'3'
+                    head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+                    com1.sendData(np.asarray(head+datagramas[cont-1]))
+                    t_inicial1 = 0
+                    t_inicial2 = 0
 
         print ("Transmissão finalizada")
     

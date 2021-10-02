@@ -96,7 +96,7 @@ def main():
 
         
         while rxmensagem == b"":
-            rxmensagem, nRxmensagem = com2.getData(14)
+            rxmensagem, nRxmensagem = com2.getData(33)
             print(rxmensagem)
             
             print("Handshake recebido!")
@@ -110,6 +110,7 @@ def main():
                 pass
 
         pacote_recebido = 1
+        pacote_ultimo = 0
         terminou = False
         rxBuffer = b""
 
@@ -118,32 +119,28 @@ def main():
         print("-------------------------")
 
         while not terminou:
-            rxTamPacoteAt,rxTamPacoteAtSize = com2.getData(16)
+            h7 = pacote_ultimo.to_bytes(2, "big")
+            head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
 
-            print(rxTamPacoteAt)
+            rxTamPacoteAt,rxTamPacoteAtSize = com2.getData(33)
             
-            pacote_size = rxTamPacoteAt[10:12]
-            print(pacote_size)
+            pacote_size = rxTamPacoteAt[5:7]
             pacote_size = int.from_bytes(pacote_size, "big")
 
-            print("Tamanho do pacote ", pacote_size)
-
-            print("Verificando Tamanho")
-
-            com2.sendData(rxTamPacoteAt)
+            print("Tamanho do payload ", pacote_size)
 
             print("Recebendo o pacote")
 
-            rxPacote, rxPacotesize = com2.getData(pacote_size)
+            rxPacote, rxPacotesize = com2.getData(35+pacote_size)
 
-            pacote = rxPacote[0]
-            pacote_final = rxPacote[2]
+            pacote = int.from_bytes(rxPacote[5:6], "big")
+            pacote_final = int.from_bytes(rxPacote[4:5], "big")
             print("Serao recebidos {} pacotes".format(pacote_final))
             rxPacote_str = rxPacote.decode("utf-8")
 
             print("Recebi pacote {}".format(pacote))
 
-            rxBuffer = rxBuffer + rxPacote[10:-4]   
+            rxBuffer = rxBuffer + rxPacote[16:-19]   
 
 
             if pacote == pacote_recebido:
@@ -156,13 +153,20 @@ def main():
 
             print("Enviando confirmação")
 
-            if rxPacote[-4:] == EOP:
-                greenlight = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+b'sim'+EOP
+            if rxPacote[-19:] == EOP:
+                h0 = b'4'
+                h7 = b'1'
+                head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+                greenlight = head+EOP
                 com2.sendData(greenlight)
                 print("Tudo certo, pacote enviado completo")
                 print("-------------------------")
+                pacote_ultimo+=1
             else:
-                redlight = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'+b'nao'+EOP
+                h0 = b'6'
+                h6 = pacote_recebido.to_bytes(2, "big")
+                head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+                redlight = head+EOP
                 com2.sendData(redlight)
                 print("Deu erro, pacote enviado incompleto. Aguardando novo envio")
                 continue
