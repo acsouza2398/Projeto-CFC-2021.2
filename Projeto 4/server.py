@@ -14,6 +14,7 @@ from enlace import *
 import time
 import numpy as np
 import os
+import datetime
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -79,9 +80,9 @@ def main():
 
 
         head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
-        EOP = b'0xFF 0xAA 0xFF 0xAA'
+        EOP = b'0xFF0xAA0xFF0xAA'
 
-        
+        log = []
 
         rxmensagem = b""
 
@@ -98,8 +99,12 @@ def main():
 
         
         while ocioso:
-            rxmensagem, nRxmensagem = com2.getData(33)
+            rxmensagem, nRxmensagem = com2.getData(30)
             print(rxmensagem)
+
+            tempo = datetime.datetime.now()
+            log_str = str(tempo) + " /recebe /" + h0.decode("utf-8") + " /14"
+            log.append(log_str)
 
             
             print("Handshake recebido!")
@@ -112,6 +117,10 @@ def main():
 
         answer = head+EOP
         com2.sendData(answer)
+
+        tempo = datetime.datetime.now()
+        log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " /14"
+        log.append(log_str)
 
         print("Handshake enviado")
         cont = 1
@@ -135,36 +144,46 @@ def main():
             h7 = pacote_ultimo.to_bytes(2, "big")
             head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
 
-            rxTamPacoteAt,rxTamPacoteAtSize = com2.getData(34)
-            print("rxTamPacoteAt: ",rxTamPacoteAt)
-
+            rxTamPacoteAt,rxTamPacoteAtSize = com2.getData(31)
+            rxPacoteAt_str = rxTamPacoteAt.decode("utf-8")
             
             pacote_size = rxTamPacoteAt[5:7]
             pacote_size = int.from_bytes(pacote_size, "big")
+
+            tempo = datetime.datetime.now()
+            log_str = str(tempo) + " /recebe /" + rxPacoteAt_str [0] + " /14"
+            log.append(log_str)
 
             print("Tamanho do payload ", pacote_size)
 
             print("Recebendo o pacote")
 
-            rxPacote, rxPacotesize = com2.getData(35+pacote_size)
-
-            pacote = int.from_bytes(rxPacote[5:6], "big")
-            pacote_final = int.from_bytes(rxPacote[4:5], "big")
-            print("Serao recebidos {} pacotes".format(pacote_final))
+            rxPacote, rxPacotesize = com2.getData(31+pacote_size)
             rxPacote_str = rxPacote.decode("utf-8")
 
-            print("Recebi pacote {}".format(pacote))
-            print(rxPacote)
+            tempo = datetime.datetime.now()
+            log_str = str(tempo) + " /recebe /" + rxPacote_str[0] + " / " + str(pacote_size+14)
+            log.append(log_str)
 
-            if rxPacote[0] == b"3":
+            pacote = int.from_bytes(rxPacote[4:5], "big")
+            numPckg = int.from_bytes(rxPacote[3:4], "big")
+            print("Serao recebidos {} pacotes".format(numPckg))
+
+            print("Recebi pacote {}".format(pacote))
+            print(rxPacote_str[0])
+
+            if rxPacote_str[0] == "3":
                 
-                if pacote == cont and rxPacote[-19:] == EOP:
+                if pacote == cont and rxPacote[-16:] == EOP:
                     print("Pacote {} recebido".format(pacote))
                     h0 = b'4'
                     h7 = b'1'
                     head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
                     greenlight = head+EOP
                     com2.sendData(greenlight)
+                    tempo = datetime.datetime.now()
+                    log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " /14"
+                    log.append(log_str)
                     print("Tudo certo, pacote enviado completo")
                     print("-------------------------")
                     pacote_ultimo+=1
@@ -177,6 +196,9 @@ def main():
                     head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
                     redlight = head+EOP
                     com2.sendData(redlight)
+                    tempo = datetime.datetime.now()
+                    log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " /14"
+                    log.append(log_str)
                     print("Deu erro, aguardando novo envio")
                     continue
                     
@@ -189,6 +211,9 @@ def main():
                     head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
                     redlight = head+EOP
                     com2.sendData(redlight)
+                    tempo = datetime.datetime.now()
+                    log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " /14"
+                    log.append(log_str)
                     print("Timeout")
                     com2.disable()
                     exit()
@@ -197,10 +222,13 @@ def main():
                     head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
                     redlight = head+EOP
                     com2.sendData(redlight)
+                    tempo = datetime.datetime.now()
+                    log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " /14"
+                    log.append(log_str)
                     print("Tipo de msg errado. Aguardando novo envio")
                     
 
-            rxBuffer = rxBuffer + rxPacote[16:-19]  
+            rxBuffer = rxBuffer + rxPacote[15:-16]  
 
             
 
@@ -220,6 +248,12 @@ def main():
             imagem.write(rxBuffer)
             imagem.close()
             
+        imgWrite = "Server.txt"
+        
+        with open(imgWrite, "w") as imagem:
+            for i in log:
+                imagem.writelines(i + "\n")
+            imagem.close()
             
     
         # Encerra comunicação

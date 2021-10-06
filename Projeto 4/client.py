@@ -15,7 +15,7 @@ from enlace import *
 import time
 from random import randint
 import numpy as np
-import time
+import datetime
 import math
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
@@ -26,7 +26,9 @@ import math
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM5"                  # Windows(variacao de)
+serialName = "COM3"                  # Windows(variacao de)
+#Ana - COM3
+#Tiago - COM5
 
 
 def main():
@@ -65,7 +67,9 @@ def main():
 
 
         head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
-        EOP = b'0xFF 0xAA 0xFF 0xAA'
+        EOP = b'0xFF0xAA0xFF0xAA'
+
+        log = []
 
         while not inicia:
 
@@ -89,16 +93,22 @@ def main():
 
                 mensagem = head+EOP
 
+                tempo = datetime.datetime.now()
+                log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " /14"
+                log.append(log_str)
+
                 print("Enviando o handshake")
                 com1.sendData(mensagem)
 
-                #time.sleep(5)
-
                 print("Na escuta")
 
-                answer, answerlen = com1.getData(33)
+                answer, answerlen = com1.getData(30)
 
                 answer_d = answer.decode("utf-8")
+
+                tempo = datetime.datetime.now()
+                log_str = str(tempo) + " /recebe /" + answer_d[0] + " /14"
+                log.append(log_str)
 
                 if answer_d[2] == h2.decode("utf-8"):
                     print("Resposta recebida")
@@ -148,14 +158,17 @@ def main():
             h0=b'3'
             h3=numPck.to_bytes(1, byteorder='big')
             h4=cont.to_bytes(1, byteorder='big')
-            h5=(len(datagramas[cont-1])-19).to_bytes(2, byteorder="big")
+            h5=(len(datagramas[cont-1])-16).to_bytes(2, byteorder="big")
             
             head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
 
             print("Começando o processo de envio do pacote {}".format(cont))
             pacote_atual = (len(datagramas[cont-1])).to_bytes(2, byteorder="big")
 
-            
+            tempo = datetime.datetime.now()
+            size_tot = 14 + int.from_bytes(h5, "big")
+            log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " / " + str(size_tot) + " / " + str(cont) + " / " + str(numPck)
+            log.append(log_str)
 
             print("Enviando o tamanho do pacote")
             com1.sendData(np.asarray(head+EOP))
@@ -169,9 +182,13 @@ def main():
             t_inicial2 = time.time()
 
             print("Aguardando confirmação")
-            check_pacote, check_pacote_size = com1.getData(33)
+            check_pacote, check_pacote_size = com1.getData(30)
 
             check_pacote_str = check_pacote.decode("utf-8")
+
+            tempo = datetime.datetime.now()
+            log_str = str(tempo) + " /recebe /" + check_pacote_str[0] + " /14"
+            log.append(log_str)
 
             if check_pacote_str[0] == '4':
                 print("Confirmação recebida")
@@ -180,21 +197,31 @@ def main():
             else:
                 if time.time() - t_inicial1 > 5:
                     print("Erro. Reinviando o pacote {}".format(cont))
+                    tempo = datetime.datetime.now()
+                    size_tot = 14 + int.from_bytes(h5, "big")
+                    log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " / " + str(size_tot) + " / " + str(cont) + " / " + str(numPck)
+                    log.append(log_str)
                     com1.sendData(np.asarray(head+datagramas[cont-1]))
                     t_inicial1 = 0
 
                 if time.time() - t_inicial2 > 20:
                     h0 = b'5'
                     head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+                    tempo = datetime.datetime.now()
+                    log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " /14"
+                    log.append(log_str)
                     com1.sendData(np.asarray(head+EOP))
                     print("ops! :-\\")
                     com1.disable()
                     exit()
                 else:
-                    erro_6, erro_6_len = com1.getData(33)
+                    erro_6, erro_6_len = com1.getData(30)
                     cont = int.from_bytes(erro_6[5:6], "big")
                     h0=b'3'
                     head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
+                    tempo = datetime.datetime.now()
+                    log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " /14 /" + str(cont) + " / " + str(numPck)
+                    log.append(log_str)
                     com1.sendData(np.asarray(head+datagramas[cont-1]))
                     t_inicial1 = 0
                     t_inicial2 = 0
@@ -207,6 +234,13 @@ def main():
         #print("txSize:",txSize)
 
         #Verificação
+
+        imgWrite = "Client.txt"
+
+        with open(imgWrite, "w") as imagem:
+            for i in log:
+                imagem.writelines(i + "\n")
+            imagem.close()
 
 
         timefinal = time.time()
