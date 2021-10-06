@@ -75,8 +75,8 @@ def main():
         h5=b'0'
         h6=b'0'
         h7=b'0'
-        h8=b'CRC'
-        h9=b'CRC'
+        h8=b'0'
+        h9=b'0'
 
 
         head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
@@ -99,7 +99,7 @@ def main():
 
         
         while ocioso:
-            rxmensagem, nRxmensagem = com2.getData(30)
+            rxmensagem, nRxmensagem = com2.getData(26)
             print(rxmensagem)
 
             tempo = datetime.datetime.now()
@@ -125,10 +125,7 @@ def main():
         print("Handshake enviado")
         cont = 1
 
-
-        pacote_recebido = 1
         pacote_ultimo = 0
-        terminou = False
         rxBuffer = b""
 
         numPckg = 1000
@@ -139,12 +136,13 @@ def main():
         print("-------------------------")
 
         while cont <= numPckg:
+            print("comeco do loop")
             timer1 = time.time()
             timer2 = time.time()
-            h7 = pacote_ultimo.to_bytes(2, "big")
+            h7 = pacote_ultimo.to_bytes(1, "big")
             head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
 
-            rxTamPacoteAt,rxTamPacoteAtSize = com2.getData(31)
+            rxTamPacoteAt,rxTamPacoteAtSize = com2.getData(27)
             rxPacoteAt_str = rxTamPacoteAt.decode("utf-8")
             
             pacote_size = rxTamPacoteAt[5:7]
@@ -158,7 +156,7 @@ def main():
 
             print("Recebendo o pacote")
 
-            rxPacote, rxPacotesize = com2.getData(31+pacote_size)
+            rxPacote, rxPacotesize = com2.getData(27+pacote_size)
             rxPacote_str = rxPacote.decode("utf-8")
 
             tempo = datetime.datetime.now()
@@ -188,11 +186,9 @@ def main():
                     print("-------------------------")
                     pacote_ultimo+=1
                     cont += 1 
-                    
-
                 else:
                     h0 = b'6'
-                    h6 = cont.to_bytes(2, "big")
+                    h6 = cont.to_bytes(1, "big")
                     head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
                     redlight = head+EOP
                     com2.sendData(redlight)
@@ -201,8 +197,6 @@ def main():
                     log.append(log_str)
                     print("Deu erro, aguardando novo envio")
                     continue
-                    
-            
             else:
                 time.sleep(1)
                 if time.time()-timer2 > 20:

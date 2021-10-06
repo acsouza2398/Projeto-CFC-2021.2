@@ -62,12 +62,13 @@ def main():
         h5=b'0'
         h6=b'0'
         h7=b'0'
-        h8=b'CRC'
-        h9=b'CRC'
+        h8=b'0'
+        h9=b'0'
 
 
         head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
         EOP = b'0xFF0xAA0xFF0xAA'
+
 
         log = []
 
@@ -102,7 +103,7 @@ def main():
 
                 print("Na escuta")
 
-                answer, answerlen = com1.getData(30)
+                answer, answerlen = com1.getData(26)
 
                 answer_d = answer.decode("utf-8")
 
@@ -182,13 +183,15 @@ def main():
             t_inicial2 = time.time()
 
             print("Aguardando confirmação")
-            check_pacote, check_pacote_size = com1.getData(30)
+            check_pacote, check_pacote_size = com1.getData(26)
 
             check_pacote_str = check_pacote.decode("utf-8")
 
             tempo = datetime.datetime.now()
             log_str = str(tempo) + " /recebe /" + check_pacote_str[0] + " /14"
             log.append(log_str)
+
+            print(check_pacote)
 
             if check_pacote_str[0] == '4':
                 print("Confirmação recebida")
@@ -203,8 +206,8 @@ def main():
                     log.append(log_str)
                     com1.sendData(np.asarray(head+datagramas[cont-1]))
                     t_inicial1 = 0
-
-                if time.time() - t_inicial2 > 20:
+                elif time.time() - t_inicial2 > 20:
+                    print("timeout")
                     h0 = b'5'
                     head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
                     tempo = datetime.datetime.now()
@@ -214,17 +217,9 @@ def main():
                     print("ops! :-\\")
                     com1.disable()
                     exit()
-                else:
-                    erro_6, erro_6_len = com1.getData(30)
-                    cont = int.from_bytes(erro_6[5:6], "big")
-                    h0=b'3'
-                    head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
-                    tempo = datetime.datetime.now()
-                    log_str = str(tempo) + " /envio /" + h0.decode("utf-8") + " /14 /" + str(cont) + " / " + str(numPck)
-                    log.append(log_str)
-                    com1.sendData(np.asarray(head+datagramas[cont-1]))
-                    t_inicial1 = 0
-                    t_inicial2 = 0
+                elif check_pacote_str[0] == '6':
+                    print(check_pacote[6])
+                    cont = check_pacote[6]
 
         print ("Transmissão finalizada")
     
