@@ -191,8 +191,6 @@ def main():
             log_str = str(tempo) + " /recebe /" + check_pacote_str[0] + " /14"
             log.append(log_str)
 
-            print(check_pacote)
-
             if check_pacote_str[0] == '4':
                 print("Confirmação recebida")
                 print("-------------------------")
@@ -206,8 +204,8 @@ def main():
                     log.append(log_str)
                     com1.sendData(np.asarray(head+datagramas[cont-1]))
                     t_inicial1 = 0
-                elif time.time() - t_inicial2 > 20:
-                    print("timeout")
+                if time.time() - t_inicial2 > 20:
+                    print("Timeout")
                     h0 = b'5'
                     head = h0+h1+h2+h3+h4+h5+h6+h7+h8+h9
                     tempo = datetime.datetime.now()
@@ -218,7 +216,6 @@ def main():
                     com1.disable()
                     exit()
                 elif check_pacote_str[0] == '6':
-                    print(check_pacote[6])
                     cont = check_pacote[6]
 
         print ("Transmissão finalizada")

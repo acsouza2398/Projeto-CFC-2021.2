@@ -100,7 +100,6 @@ def main():
         
         while ocioso:
             rxmensagem, nRxmensagem = com2.getData(26)
-            print(rxmensagem)
 
             tempo = datetime.datetime.now()
             log_str = str(tempo) + " /recebe /" + h0.decode("utf-8") + " /14"
@@ -136,7 +135,6 @@ def main():
         print("-------------------------")
 
         while cont <= numPckg:
-            print("comeco do loop")
             timer1 = time.time()
             timer2 = time.time()
             h7 = pacote_ultimo.to_bytes(1, "big")
@@ -222,7 +220,7 @@ def main():
                     print("Tipo de msg errado. Aguardando novo envio")
                     
 
-            rxBuffer = rxBuffer + rxPacote[15:-16]  
+            rxBuffer = rxBuffer + rxPacote[11:-16]  
 
             
 
