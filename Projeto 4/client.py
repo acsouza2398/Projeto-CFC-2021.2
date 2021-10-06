@@ -26,7 +26,7 @@ import math
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM3"                  # Windows(variacao de)
+serialName = "COM5"                  # Windows(variacao de)
 
 
 def main():
@@ -135,6 +135,7 @@ def main():
 
         numPck = len(QntPackages)
 
+        time.sleep(1)
 
         #Enviando o Datagrama
         print("-------------------------")
@@ -153,6 +154,8 @@ def main():
 
             print("Começando o processo de envio do pacote {}".format(cont))
             pacote_atual = (len(datagramas[cont-1])).to_bytes(2, byteorder="big")
+
+            
 
             print("Enviando o tamanho do pacote")
             com1.sendData(np.asarray(head+EOP))
