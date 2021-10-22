@@ -2,17 +2,52 @@
 
 due_sw_uart uart;
 char teste = 'a';
+//a em binario = 01100001
 
 void setup() {
   //Serial.begin(9600);
-  sw_uart_setup(&uart, 4, 1, 8, SW_UART_EVEN_PARITY);
+  pinMode(4, OUTPUT);
+  digitalWrite(4, HIGH);
+  delay(1000);
 }
 
 void loop() {
- test_write();
+  digitalWrite(4, LOW);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, HIGH);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, LOW);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, LOW);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, LOW);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, LOW);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, HIGH);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, HIGH);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, LOW);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, HIGH);
+  sw_uart_delay_H();
+  sw_uart_delay_H();
+  digitalWrite(4, HIGH);
+  delay(1000);
+ //test_write();
 }
 
-void test_write() {
-  sw_uart_write_string(&uart, teste);
-  delay(1000);
+void sw_uart_delay_H() {
+  for(int i = 0; i < 1093; i++)
+    asm("NOP");
 }
