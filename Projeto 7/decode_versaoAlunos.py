@@ -2,7 +2,11 @@
 """Show a text-mode spectrogram using live microphone data."""
 
 #Importe todas as bibliotecas
-
+import numpy as np
+import sounddevice as sd
+import os as sys
+from suaBibSignal import signalMeu
+import matplotlib.pyplot as plt
 
 #funcao para transformas intensidade acustica em dB
 def todB(s):
@@ -17,8 +21,12 @@ def main():
     
     #voce importou a bilioteca sounddevice como, por exemplo, sd. entao
     # os seguintes parametros devem ser setados:
+
+    sinal = signalMeu()
+
+    fs = 44100
     
-    sd.default.samplerate = #taxa de amostragem
+    sd.default.samplerate = fs #taxa de amostragem
     sd.default.channels = 2  #voce pode ter que alterar isso dependendo da sua placa
     duration = #tempo em segundos que ira aquisitar o sinal acustico captado pelo mic
 
