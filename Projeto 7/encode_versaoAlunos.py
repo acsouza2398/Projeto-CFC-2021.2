@@ -1,5 +1,4 @@
 
-
 #importe as bibliotecas
 import numpy as np
 import sounddevice as sd
@@ -36,7 +35,7 @@ def main():
     sd.default.channels = 2  #voce pode ter que alterar isso dependendo da sua placa
 
     amplitude = 1
-    tempo = 2
+    tempo = 1
     
     
     duration = 10 #tempo em segundos que ira emitir o sinal acustico 
@@ -101,6 +100,8 @@ def main():
 
     array_tempo = np.linspace(0, tempo, fs*tempo)
 
+    print("Frequências: {0} + {1}".format(f1, f2))
+
     
     #construa o sunal a ser reproduzido. nao se esqueca de que é a soma das senoides
     
@@ -108,8 +109,16 @@ def main():
     # reproduz o som
     sd.play(tone, fs)
     # Exibe gráficos
-    plt.plot(array_tempo, tone, "red")
+    plt.plot(array_tempo[:250], tone[:250], "red")
+    plt.title("Frequência do sinal {0}".format(NUM))
     plt.show()
+
+    # plotando fourier
+    xf, yf = sinal.calcFFT(tone, fs)
+    plt.plot(xf, yf)
+    plt.title("Fourier do Sinal Gerado")
+    plt.show()
+
     # aguarda fim do audio
     sd.wait()
 
