@@ -57,10 +57,16 @@ def main():
 
     print("Normalizando")
 
-    n = 44100 * 4 
-
     norm = normalize(audio)
     time.sleep(1)
+
+    array_tempo = np.linspace(0, tempo, fs*tempo)
+
+    #Gráfico 1: Sinal de áudio original normalizado – domínio do tempo
+    plt.plot(array_tempo[:1000], norm[:1000])
+    plt.title('Gráfico 1: Sinal de áudio original normalizado – domínio do tempo')
+    plt.show()
+
 
     print("Filtrando audio e tocando novamente")
     
@@ -68,6 +74,18 @@ def main():
 
     sd.play(filtro)
     time.sleep(2)
+
+    #Gráfico 2: Sinal de áudio filtrado – domínio do tempo. (repare que não se nota diferença). 
+    plt.plot(array_tempo[:1000], filtro[:1000])
+    plt.title('Gráfico 2: Sinal de áudio filtrado – domínio do tempo')
+    plt.show()
+
+    #Gráfico 3: Sinal de áudio filtrado – domínio da frequência. 
+    xfiltro, yfiltro = sinal.calcFFT(filtro, fs)
+    plt.plot(xfiltro, yfiltro)
+    plt.title('Gráfico 3: Sinal de áudio filtrado – domínio da frequência')
+    plt.show()
+
 
     print("Modulando para AM")
 
@@ -83,13 +101,36 @@ def main():
     sd.play(mod)
     time.sleep(2)
 
+    #Gráfico 4: sinal de áudio modulado – domínio do tempo (mais uma vez, não se nota diferença)
+    plt.title('Gráfico 4: sinal de áudio modulado – domínio do tempo')
+    plt.plot(array_tempo[:1000], mod[:1000])
+    plt.show()
+
+    # Gráfico 5: sinal de áudio modulado – domínio da frequência
+    xmod, ymod = sinal.calcFFT(mod, fs)
+    plt.plot(xmod, np.abs(ymod), color="darkorange")
+    plt.title("Gráfico 5: sinal de áudio modulado – domínio da frequência")
+    plt.show()
+
     print("Demodulando o audio")
     demod = yport*mod
     time.sleep(1)
 
+    # Gráfico 6: sinal de áudio demodulado – domínio da frequência. (verifique que reobteve as baixas frequências)
+    xdemod, ydemod = sinal.calcFFT(demod, fs)
+    plt.plot(xdemod, np.abs(ydemod))
+    plt.title("Gráfico 6: sinal de áudio demodulado – domínio da frequência")
+    plt.show()
+
     print("Filtrando o demodulado")
 
     filtro_demod = LPF(demod, 4000, fs)
+
+    # Gráfico 7: sinal de áudio demodulado e filtrado – domínio da frequência.
+    xfiltro_demod, yfiltro_demod = sinal.calcFFT(filtro_demod, fs)
+    plt.plot(xfiltro_demod, np.abs(yfiltro_demod))
+    plt.title("Gráfico 7: sinal de áudio demodulado e filtrado – domínio da frequência")
+    plt.show()
 
     print("Tocando audio demodulado e filtrado")
 
