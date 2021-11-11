@@ -108,7 +108,7 @@ def main():
 
     # Gráfico 5: sinal de áudio modulado – domínio da frequência
     xmod, ymod = sinal.calcFFT(mod, fs)
-    plt.plot(xmod, np.abs(ymod), color="darkorange")
+    plt.plot(xmod, np.abs(ymod))
     plt.title("Gráfico 5: sinal de áudio modulado – domínio da frequência")
     plt.show()
 
